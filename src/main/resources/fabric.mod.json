@@ -1,0 +1,32 @@
+{
+  "schemaVersion": 1,
+  "id": "largeradvancementtab",
+  "version": "${version}",
+  "name": "LargerAdvancementTab",
+  "description": "",
+  "authors": [],
+  "contact": {},
+  "license": "GPL-3.0",
+  "icon": "assets/largeradvancementtab/icon.png",
+  "environment": "*",
+  "accessWidener" : "largeradvancementtab.accesswidener",
+  "entrypoints": {
+    "client": [
+      "com.github.ringlocker.largeradvancementtab.client.LargerAdvancementTabClient"
+    ],
+    "main": [
+      "com.github.ringlocker.largeradvancementtab.LargerAdvancementTab"
+    ]
+  },
+  "mixins": [
+    "largeradvancementtab.mixins.json"
+  ],
+  "depends": {
+    "fabricloader": ">=${loader_version}",
+    "fabric": "*",
+    "minecraft": "${minecraft_version}"
+  },
+  "suggests": {
+    "cloth-config2": "*"
+  }
+}
