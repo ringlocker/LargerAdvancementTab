@@ -1,4 +1,4 @@
-# Larger Advancements Tab
+# Larger Advancement Tab
 Fabric mod that adds a setting to increase the size of the advancements tab.
 
 #### Dependencies
@@ -18,7 +18,7 @@ Adds an option to disable the background dimming when hovering over an advanceme
 
 
 # Examples
-All example screenshots come from a 2560x1440 display with a gui scale of 2.
+*All example screenshots come from a 2560x1440 display with a gui scale of 2.
 
 ## 0.5 Scale
 <img src="https://github.com/ringlocker/images/blob/main/largeradvancementstab/0.5.png?raw=true" alt="screenshot of 0.5 Scale" width="512" height="288">
