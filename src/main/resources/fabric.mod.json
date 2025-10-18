@@ -4,8 +4,14 @@
   "version": "${version}",
   "name": "LargerAdvancementTab",
   "description": "",
-  "authors": [],
-  "contact": {},
+  "contact": {
+    "homepage": "https://github.com/ringlocker",
+    "sources": "https://github.com/ringlocker/LargerAdvancementTab",
+    "issues": "https://github.com/ringlocker/LargerAdvancementTab/issues"
+  },
+  "authors": [
+    "ringlocker"
+  ],
   "license": "GPL-3.0",
   "icon": "assets/largeradvancementtab/icon.png",
   "environment": "*",
@@ -16,6 +22,9 @@
     ],
     "main": [
       "com.github.ringlocker.largeradvancementtab.LargerAdvancementTab"
+    ],
+    "modmenu": [
+      "com.github.ringlocker.largeradvancementtab.LargerAdvancementTabModMenu"
     ]
   },
   "mixins": [
@@ -23,8 +32,9 @@
   ],
   "depends": {
     "fabricloader": ">=${loader_version}",
-    "fabric": "*",
-    "minecraft": "${minecraft_version}"
+    "minecraft": "${minecraft_version}",
+    "cloth-config2": ">=20.0.148",
+    "modmenu":">=16.0.0-rc.1"
   },
   "suggests": {
     "cloth-config2": "*"

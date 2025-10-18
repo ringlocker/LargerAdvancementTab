@@ -8,72 +8,118 @@ import net.minecraft.client.gui.screens.advancements.AdvancementTabType;
 import net.minecraft.world.item.ItemStack;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Mutable;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
+import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
-
-import static com.github.ringlocker.largeradvancementtab.LargerAdvancementTab.MULTIPLIER;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 @Environment(EnvType.CLIENT)
 @Mixin(AdvancementTabType.class)
 public class AdvancementTabTypeMixin {
 
-    @Shadow @Final @Mutable private int width;
-    @Shadow @Final @Mutable private int height;
-    @Shadow public int getX(int i) { return 0; }
-    @Shadow public int getY(int i) { return 0; }
+    @Shadow @Final private int width;
+    @Shadow @Final private int height;
 
-    @Inject(method = "<init>", at = @At("TAIL"))
-    private void init(String string, int i, AdvancementTabType.Sprites sprites, AdvancementTabType.Sprites sprites2, int j, int k, int l, CallbackInfo ci) {
-        if (((AdvancementTabType)(Object)this).name().equals("ABOVE")) {
-            this.width = (int)(width * LargerAdvancementTab.MULTIPLIER);
-            this.height = (int)(height * LargerAdvancementTab.MULTIPLIER);
-        }
+    @Inject(method = "getX", at = @At("HEAD"), cancellable = true)
+    private void getScaledX(int index, CallbackInfoReturnable<Integer> cir) {
+        cir.setReturnValue((int) (this.getX2(index) * multiplier()));
     }
 
-    @ModifyArg(method = "drawIcon", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;renderFakeItem(Lnet/minecraft/world/item/ItemStack;II)V"), index = 1)
-    private int modifyX(int i) {
-        return (int) (i + (13F * (LargerAdvancementTab.MULTIPLIER - 1.0F)));
+    @Inject(method = "getY", at = @At("HEAD"), cancellable = true)
+    private void getScaledY(int index, CallbackInfoReturnable<Integer> cir) {
+        cir.setReturnValue((int) (this.getY2(index) * multiplier()));
     }
 
-    @ModifyArg(method = "drawIcon", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;renderFakeItem(Lnet/minecraft/world/item/ItemStack;II)V"), index = 2)
-    private int modifyY(int i) {
-        return (int) (i + (13F * (LargerAdvancementTab.MULTIPLIER - 1.0F)));
+    @ModifyArg(method = "draw", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 4)
+    public int setWidthDrawTab(int x) {
+        return scale(x);
+    }
+     @ModifyArg(method = "draw", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;blitSprite(Lcom/mojang/blaze3d/pipeline/RenderPipeline;Lnet/minecraft/resources/ResourceLocation;IIII)V"), index = 5)
+    public int setHeightDrawTab(int y) {
+        return scale(y);
     }
 
-    @Overwrite
-    public void drawIcon(GuiGraphics guiGraphics, int i, int j, int k, ItemStack itemStack) {
-        int x = i + this.getX(k);
-        int y = j + this.getY(k);
-        switch (((Enum<?>) (Object) this).ordinal()) {
-            case 0:
-                x += 6;
-                y += 9;
-                break;
-            case 1:
-                x += 6;
-                y += 6;
-                break;
-            case 2:
-                x += 10;
-                y += 5;
-                break;
-            case 3:
-                x += 6;
-                y += 5;
+    @Inject(method = "drawIcon", at = @At("HEAD"), cancellable = true)
+    public void drawIcon(GuiGraphics guiGraphics, int i, int j, int k, ItemStack itemStack, CallbackInfo ci) {
+        float multiplier = multiplier();
+
+        int x = i + (int) (this.getX2(k) * multiplier);
+        int y = j + (int) (this.getY2(k) * multiplier);
+
+        switch (((AdvancementTabType) (Object) this)) {
+            case ABOVE -> {
+                x += (int) (6 * multiplier);
+                y += (int) (9 * multiplier);
+            }
+            case BELOW -> {
+                x += (int) (6 * multiplier);
+                y += (int) (6 * multiplier);
+            }
+            case LEFT -> {
+                x += (int) (10 * multiplier);
+                y += (int) (5 * multiplier);
+            }
+            case RIGHT -> {
+                x += (int) (6 * multiplier);
+                y += (int) (5 * multiplier);
+            }
         }
 
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(MULTIPLIER, MULTIPLIER);
-        int x1 = - ((int) ((MULTIPLIER - 1.0F) * 10.0F));
-        int y1 = -((int) ((MULTIPLIER - 1.0F) * 7.0F));
-        guiGraphics.renderFakeItem(itemStack, x1, y1);
+        guiGraphics.pose().scale(multiplier, multiplier);
+        guiGraphics.renderFakeItem(itemStack, 0, 0);
         guiGraphics.pose().popMatrix();
+
+        ci.cancel();
+    }
+
+    @Inject(method = "isMouseOver", at = @At("HEAD"), cancellable = true)
+    public void isMouseOver(int i, int j, int k, double mouseX, double mouseY, CallbackInfoReturnable<Boolean> cir) {
+        float mult = multiplier();
+
+        double left = i + (this.getX2(k) * mult);
+        double top  = j + (this.getY2(k) * mult);
+
+        double right = left + (this.width * mult);
+        double bottom = top + (this.height * mult);
+
+        boolean inside = mouseX > left && mouseX < right
+                && mouseY > top  && mouseY < bottom;
+
+        cir.setReturnValue(inside);
+        cir.cancel();
+    }
+
+    @Unique
+    private int getX2(int index) {
+        return switch (((AdvancementTabType) (Object) this)) {
+            case ABOVE, BELOW -> (this.width + 4) * index;
+            case LEFT -> -this.width + 4;
+            case RIGHT -> 248;
+        };
+    }
+
+    @Unique
+    private int getY2(int index) {
+        return switch (((AdvancementTabType) (Object) this)) {
+            case ABOVE -> -this.height + 4;
+            case BELOW -> 136;
+            case LEFT, RIGHT -> (this.height + 4) * index;
+        };
+    }
+
+    @Unique
+    private static int scale(int original) {
+        return (int) ((float) original * multiplier());
+    }
+
+    @Unique
+    private static float multiplier() {
+        return LargerAdvancementTab.config.advancementTabSizeMultiplier;
     }
 
 }

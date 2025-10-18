@@ -18,46 +18,41 @@ import org.spongepowered.asm.mixin.injection.ModifyArg;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
-import static com.github.ringlocker.largeradvancementtab.LargerAdvancementTab.MULTIPLIER;
-
 @Environment(EnvType.CLIENT)
 @Mixin(AdvancementsScreen.class)
 public class AdvancementScreenMixin {
-
-    @Unique private static final int WIDTH = (int) (252.0F * MULTIPLIER);
-    @Unique private static final int HEIGHT = (int) (140.0F * MULTIPLIER);
 
     @Shadow private static final Component TITLE = Component.translatable("gui.advancements");
     @Shadow private AdvancementTab selectedTab;
 
     @ModifyConstant(method = "mouseClicked", constant = @Constant(intValue = 252))
     public int modifyWidthMouseClicked(int original) {
-       return WIDTH;
+       return width();
     }
 
     @ModifyConstant(method = "mouseClicked", constant = @Constant(intValue = 140))
     public int modifyHeightMouseClicked(int original) {
-       return HEIGHT;
+       return height();
     }
 
     @ModifyConstant(method = "render", constant = @Constant(intValue = 252))
     public int modifyWidthMouseRender(int original) {
-       return WIDTH;
+       return width();
     }
 
     @ModifyConstant(method = "render", constant = @Constant(intValue = 140))
     public int modifyHeightRender(int original) {
-       return HEIGHT;
+       return height();
     }
 
     @ModifyConstant(method = "renderWindow", constant = @Constant(intValue = 252))
     public int modifyWidthRenderWindow(int original) {
-        return WIDTH;
+        return width();
     }
 
     @ModifyConstant(method = "renderWindow", constant = @Constant(intValue = 140))
     public int modifyHeightWRenderWindow(int original) {
-        return HEIGHT;
+        return height();
     }
 
     @ModifyConstant(method = "renderWindow", constant = @Constant(intValue = 256), require = 2)
@@ -67,19 +62,19 @@ public class AdvancementScreenMixin {
 
     @ModifyArg(method = "renderWindow", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/advancements/AdvancementTab;drawTab(Lnet/minecraft/client/gui/GuiGraphics;IIZ)V"), index = 2)
     public int modifyTabHeightRenderWindow(int y) {
-        return y + (int) ((MULTIPLIER - 1) * 4F);
+        return y + (int) (Math.abs(multiplier() - 1) * 4F);
     }
 
     @ModifyArg(method = "renderWindow", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/screens/advancements/AdvancementTab;drawIcon(Lnet/minecraft/client/gui/GuiGraphics;II)V"), index = 2)
     public int modifyTabIconHeightRenderWindow(int y) {
-        return y + (int) ((MULTIPLIER - 1) * 4F);
+        return y + (int) (Math.abs(multiplier() - 1) * 4F);
     }
 
     @Inject(method = "renderWindow", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;drawString(Lnet/minecraft/client/gui/Font;Lnet/minecraft/network/chat/Component;IIIZ)V", shift = At.Shift.BEFORE), cancellable = true)
     public void modifyTitleSizeRenderWindow(GuiGraphics guiGraphics, int x, int y, CallbackInfo ci) {
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().translate(x, y);
-        guiGraphics.pose().scale(MULTIPLIER, MULTIPLIER);
+        guiGraphics.pose().scale(multiplier(), multiplier());
         guiGraphics.drawString(Minecraft.getInstance().font, this.selectedTab != null ? this.selectedTab.getTitle() : TITLE, 8,  6, -12566464, false);
         guiGraphics.pose().popMatrix();
         ci.cancel();
@@ -105,9 +100,44 @@ public class AdvancementScreenMixin {
         return scale(original);
     }
 
+    @ModifyConstant(method = "renderInside", constant = @Constant(intValue = 234))
+    public int modifySadWidthRenderInside(int original) {
+        return scale(original);
+    }
+
+    @ModifyConstant(method = "renderInside", constant = @Constant(intValue = 113))
+    public int modifySadHeightRenderInside(int original) {
+        return scale(original);
+    }
+
+    @ModifyConstant(method = "renderInside", constant = @Constant(intValue = 117))
+    public int modifySadTextWidthRenderInside(int original) {
+        return scale(original);
+    }
+
+    @ModifyConstant(method = "renderInside", constant = @Constant(intValue = 56))
+    public int modifySadTextHeightRenderInside(int original) {
+        return scale(original);
+    }
+
     @Unique
     private static int scale(int original) {
-        return (int) ((float) original * LargerAdvancementTab.MULTIPLIER);
+        return (int) ((float) original * multiplier());
+    }
+
+    @Unique
+    private static float multiplier() {
+        return LargerAdvancementTab.config.advancementTabSizeMultiplier;
+    }
+
+    @Unique
+    private static int width() {
+        return (int) (252.0F * multiplier());
+    }
+    
+    @Unique
+    private static int height() {
+        return (int) (140.0F * multiplier());
     }
 
 }

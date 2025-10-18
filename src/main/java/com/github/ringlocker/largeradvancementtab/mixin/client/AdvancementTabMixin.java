@@ -14,18 +14,18 @@ import net.minecraft.resources.ResourceLocation;
 import net.minecraft.util.Mth;
 import org.spongepowered.asm.mixin.Final;
 import org.spongepowered.asm.mixin.Mixin;
-import org.spongepowered.asm.mixin.Overwrite;
 import org.spongepowered.asm.mixin.Shadow;
 import org.spongepowered.asm.mixin.Unique;
+import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Constant;
+import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.ModifyConstant;
+import org.spongepowered.asm.mixin.injection.Redirect;
+import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 @Environment(EnvType.CLIENT)
 @Mixin(AdvancementTab.class)
 public class AdvancementTabMixin {
-
-    @Unique private static final int WIDTH = (int) (252.0F * LargerAdvancementTab.MULTIPLIER);
-    @Unique private static final int HEIGHT = (int) (140.0F * LargerAdvancementTab.MULTIPLIER);
 
     @Shadow private double scrollX;
     @Shadow private double scrollY;
@@ -39,38 +39,42 @@ public class AdvancementTabMixin {
 
     @ModifyConstant(method = "drawTooltips", constant = @Constant(intValue = 234), require = 2)
     public int modifyBackgroundWidthDrawTooltips(int original) {
-        return WIDTH - (scale(10) + Math.round(8F * LargerAdvancementTab.MULTIPLIER));
+        return width() - (scale(10) + Math.round(8F * multiplier()));
     }
 
     @ModifyConstant(method = "drawTooltips", constant = @Constant(intValue = 113), require = 2)
     public int modifyBackgroundHeightDrawTooltips(int original) {
-        return HEIGHT - (scale(19) + Math.round(8F * LargerAdvancementTab.MULTIPLIER));
+        return height() - (scale(19) + Math.round(8F * multiplier()));
     }
 
-    /**
-     * @author ringlocker
-     * @reason make background render correctly, instead of to the nearest 16th int.
-     */
-    @Overwrite
-    public void drawContents(GuiGraphics guiGraphics, int x, int y) {
+    @Redirect(method = "drawTooltips", at = @At(value = "INVOKE", target = "Lnet/minecraft/client/gui/GuiGraphics;fill(IIIII)V"))
+    private void skipFadeOverlay(GuiGraphics instance, int x1, int y1, int x2, int y2, int color) {
+        if (LargerAdvancementTab.config.dimBackgroundOnAdvancementHover) {
+            instance.fill(x1, y1, x2, y2, color);
+        }
+    }
+
+
+    @Inject(method = "drawContents", at = @At("HEAD"), cancellable = true)
+    public void drawContents(GuiGraphics guiGraphics, int x, int y, CallbackInfo ci) {
 
         if (!this.centered) {
-            this.scrollX = ((double) WIDTH / 2) - 9 - (double) (this.maxX + this.minX) / 2;
-            this.scrollY = ((double) HEIGHT / 2) - 14 - (double) (this.maxY + this.minY) / 2;
+            this.scrollX = ((double) width() / 2) - 9 - (double) (this.maxX + this.minX) / 2;
+            this.scrollY = ((double) height() / 2) - 14 - (double) (this.maxY + this.minY) / 2;
             this.centered = true;
         }
 
-        guiGraphics.enableScissor(x, y, x + WIDTH - scale(18), y + HEIGHT - scale(27))    ;
+        guiGraphics.enableScissor(x, y, x + width() - scale(18), y + height() - scale(27))    ;
         guiGraphics.pose().pushMatrix();
         guiGraphics.pose().translate((float)x, (float)y);
-        ResourceLocation background = this.display.getBackground().map(ClientAsset::texturePath).orElse(TextureManager.INTENTIONAL_MISSING_TEXTURE);
+        ResourceLocation background = this.display.getBackground().map(ClientAsset.ResourceTexture::texturePath).orElse(TextureManager.INTENTIONAL_MISSING_TEXTURE);
 
         int scrollXInt = Mth.floor(this.scrollX);
         int scrollYInt = Mth.floor(this.scrollY);
         int nearestSixteenthScrollX = scrollXInt % 16;
         int nearestSixteenthScrollY = scrollYInt % 16;
-        int indexesWidth = WIDTH / 16;
-        int indexesHeight = HEIGHT / 16;
+        int indexesWidth = width() / 16 + 1;
+        int indexesHeight = height() / 16 + 1;
 
         for(int xIndex = -1; xIndex <= indexesWidth; ++xIndex) {
             for(int yIndex = -1; yIndex <= indexesHeight; ++yIndex) {
@@ -80,8 +84,8 @@ public class AdvancementTabMixin {
                         nearestSixteenthScrollX + 16 * xIndex,
                         nearestSixteenthScrollY + 16 * yIndex,
                         0.0F, 0.0F,
-                        xIndex == indexesWidth ? WIDTH % 16 : 16,
-                        yIndex == indexesHeight ? HEIGHT % 16 : 16,
+                        xIndex == indexesWidth ? width() % 16 : 16,
+                        yIndex == indexesHeight ? height() % 16 : 16,
                         16, 16
                 );
             }
@@ -93,21 +97,38 @@ public class AdvancementTabMixin {
 
         guiGraphics.pose().popMatrix();
         guiGraphics.disableScissor();
+
+        ci.cancel();
     }
 
     @ModifyConstant(method = "scroll", constant = @Constant(intValue = 234), require = 2)
     public int modifyBackgroundWidthScroll(int original) {
-        return WIDTH - scale(18);
+        return width() - scale(18);
     }
 
     @ModifyConstant(method = "scroll", constant = @Constant(intValue = 113), require = 2)
     public int modifyBackgroundHeightScroll(int original) {
-        return HEIGHT - scale(27);
+        return height() - scale(27);
     }
 
     @Unique
     private static int scale(int original) {
-        return (int) ((float) original * LargerAdvancementTab.MULTIPLIER);
+        return (int) ((float) original * multiplier());
+    }
+
+    @Unique
+    private static float multiplier() {
+        return LargerAdvancementTab.config.advancementTabSizeMultiplier;
+    }
+
+    @Unique
+    private static int width() {
+        return (int) (252.0F * multiplier());
+    }
+
+    @Unique
+    private static int height() {
+        return (int) (140.0F * multiplier());
     }
 
 }
